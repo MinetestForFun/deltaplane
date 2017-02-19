@@ -24,7 +24,8 @@ function deltaplane.on_rightclick(self, clicker)
 		return
 	end
 	local name = clicker:get_player_name()
-	if self.driver and clicker == self.driver then
+	local ctrl = clicker:get_player_control()
+	if self.driver and clicker == self.driver and ctrl.sneak then
 		self.driver = nil
 		clicker:set_detach()
 		default.player_attached[name] = false
@@ -34,6 +35,7 @@ function deltaplane.on_rightclick(self, clicker)
 		minetest.after(0.1, function()
 			clicker:setpos(pos)
 		end)
+		return
 	elseif not self.driver then
 		local attach = clicker:get_attach()
 		if attach and attach:get_luaentity() then
@@ -43,14 +45,19 @@ function deltaplane.on_rightclick(self, clicker)
 			end
 		end
 		clicker:set_detach()
+		self.driver = clicker
+		clicker:set_attach(self.object, "", {x = 0, y = 11, z = -3}, {x = 0, y = 0, z = 0})
+		default.player_attached[name] = true
+		minetest.after(0.2, function()
+			default.player_set_animation(clicker, "sit" , 30)
+		end)
+
+		if clicker.set_look_horizontal then
+			clicker:set_look_horizontal(self.object:getyaw())
+		else
+			clicker:set_look_yaw(self.object:getyaw())
+		end
 	end
-	self.driver = clicker
-	clicker:set_attach(self.object, "", {x = 0, y = 11, z = -3}, {x = 0, y = 0, z = 0})
-	default.player_attached[name] = true
-	minetest.after(0.2, function()
-		default.player_set_animation(clicker, "sit" , 30)
-	end)
-	self.object:setyaw(clicker:get_look_yaw() - math.pi / 2)
 end
 
 
@@ -69,20 +76,12 @@ end
 
 
 function deltaplane.on_punch(self, puncher)
-	if not puncher or not puncher:is_player() or self.removed then
+	if not puncher or not puncher:is_player() then
 		return
 	end
-	if self.driver and puncher == self.driver then
-		self.driver = nil
-		puncher:set_detach()
-		default.player_attached[puncher:get_player_name()] = false
-	end
+
 	if not self.driver then
-		self.removed = true
-		-- delay remove to ensure player is detached
-		minetest.after(0.1, function()
-			self.object:remove()
-		end)
+		self.object:remove()
 		if not minetest.setting_getbool("creative_mode") then
 			local inv = puncher:get_inventory()
 			if inv:room_for_item("main", "deltaplane:" .. self.parameters.name) then
@@ -120,6 +119,13 @@ function deltaplane.on_step(self, dtime)
 		end)		
 	end
 	if self.driver then
+		local attach = self.driver:get_attach()
+		if not attach or (attach:get_luaentity() and attach:get_luaentity() == self.object) then
+			self.driver = nil
+			self.stand = true
+			return
+		end
+
 		local ctrl = self.driver:get_player_control()
 		local yaw = self.object:getyaw()
 		if not self.stand then
@@ -135,12 +141,18 @@ function deltaplane.on_step(self, dtime)
 			self.v = 4
 			self.tclimb = 40
 			self.stand = false
+		--	self.object:set_animation({
+		--		x = self.animation.stand_start,
+		--		y = self.animation.stand_end},
+		--		1, 0)
 		end
 		if ctrl.left then
 			self.object:setyaw(yaw + (1 + dtime) * (0.08 * (self.parameters.controls.rotate or 1)))
 		elseif ctrl.right then
 			self.object:setyaw(yaw - (1 + dtime) * (0.08 * (self.parameters.controls.rotate or 1)))
 		end
+	else
+		self.v = self.v - 0.5
 	end
 	
 	if self.v > self.parameters.controls.speed then
@@ -150,8 +162,6 @@ function deltaplane.on_step(self, dtime)
 	if self.v <= 0 then
 		self.v = 0
 	end	
-	
-
 	
 	if self.tclimb > 0 then
 		climb = climb + ((self.tclimb/10)*(self.v/10))
@@ -171,7 +181,7 @@ end
 deltaplane.register_deltaplane = function(parameters)
 	minetest.register_entity("deltaplane:" .. parameters.name, {
 		physical = true,
-		collisionbox = {-0.5, -0.35, -0.5, 0.5, 0.3, 0.5},
+		collisionbox = {-0.5, 0, -0.5, 0.5, 0.3, 0.5},
 		visual = "mesh",
 			
 		-- New model -- 2017.02.19 --
@@ -180,14 +190,11 @@ deltaplane.register_deltaplane = function(parameters)
 		stand_start = 0,
 		stand_end = 80,
 		},
-		textures = {parameters.texture or "deltaplane.png"},	
-		
-		--textures = {parameters.texture or "default_wood.png"},
+		textures = {parameters.texture},
 		parameters = parameters,
 		driver = nil,
 		v = 0,
 		last_v = 0,
-		removed = false,
 		stand = true,
 		tclimb = 0,
 		on_rightclick = deltaplane.on_rightclick,
@@ -212,7 +219,6 @@ deltaplane.register_deltaplane = function(parameters)
 			local node = minetest.get_node_or_nil(pos)
 			if not node or node.name ~= "air" then return end
 	
-			pointed_thing.under.y = pos.y + 0.5
 			minetest.add_entity(pos, "deltaplane:"..parameters.name)
 			if not minetest.setting_getbool("creative_mode") then
 				itemstack:take_item()
@@ -226,8 +232,7 @@ end
 
 deltaplane.register_deltaplane({
 	name = "deltaplane1",
-	--texture = "default_wood.png",
-	-- il semblerai que ce soit pas necessaire vue qu'elle est déclarée dans le register ?
+	texture = "deltaplane_deltaplane1.png",
 	controls = {
 		speed = 5,
 		down = -1.3,
