@@ -173,8 +173,16 @@ deltaplane.register_deltaplane = function(parameters)
 		physical = true,
 		collisionbox = {-0.5, -0.35, -0.5, 0.5, 0.3, 0.5},
 		visual = "mesh",
-		mesh = "boat.obj",
-		textures = {parameters.texture or "default_wood.png"},
+			
+		-- New model -- 2017.02.19 --
+		mesh = "delta.x",
+		animation = {
+		stand_start = 0,
+		stand_end = 80,
+		},
+		textures = {parameters.texture or "deltaplane.png"},	
+		
+		--textures = {parameters.texture or "default_wood.png"},
 		parameters = parameters,
 		driver = nil,
 		v = 0,
@@ -218,7 +226,8 @@ end
 
 deltaplane.register_deltaplane({
 	name = "deltaplane1",
-	texture = "default_wood.png",
+	--texture = "default_wood.png",
+	-- il semblerai que ce soit pas necessaire vue qu'elle est déclarée dans le register ?
 	controls = {
 		speed = 5,
 		down = -1.3,
