@@ -185,7 +185,7 @@ deltaplane.register_deltaplane = function(parameters)
 		visual = "mesh",
 			
 		-- New model -- 2017.02.19 --
-		mesh = "delta.x",
+		mesh = "delta.b3d",
 		animation = {
 		stand_start = 0,
 		stand_end = 80,
