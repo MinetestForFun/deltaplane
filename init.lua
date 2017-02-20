@@ -188,7 +188,7 @@ deltaplane.register_deltaplane = function(parameters)
 		mesh = "delta.b3d",
 		animation = {
 		stand_start = 0,
-		stand_end = 80,
+		stand_end = 8,
 		},
 		textures = {parameters.texture},
 		parameters = parameters,
