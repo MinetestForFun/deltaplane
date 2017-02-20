@@ -144,7 +144,7 @@ function deltaplane.on_step(self, dtime)
 		--	self.object:set_animation({
 		--		x = self.animation.stand_start,
 		--		y = self.animation.stand_end},
-		--		1, 0)
+		--		5, 0)
 		end
 		if ctrl.left then
 			self.object:setyaw(yaw + (1 + dtime) * (0.08 * (self.parameters.controls.rotate or 1)))
@@ -181,7 +181,7 @@ end
 deltaplane.register_deltaplane = function(parameters)
 	minetest.register_entity("deltaplane:" .. parameters.name, {
 		physical = true,
-		collisionbox = {-0.5, 0, -0.5, 0.5, 0.3, 0.5},
+		collisionbox = {-0.5, 0, -1, 0.5, 2, 1.0},
 		visual = "mesh",
 			
 		-- New model -- 2017.02.19 --
