@@ -28,12 +28,12 @@ function deltaplane.on_rightclick(self, clicker)
 	if self.driver and clicker == self.driver and ctrl.sneak then
 		self.driver = nil
 		clicker:set_detach()
-		default.player_attached[name] = false
-		default.player_set_animation(clicker, "stand" , 30)
-		local pos = clicker:getpos()
+		player_api.player_attached[name] = false
+		player_api.set_animation(clicker, "stand" , 30)
+		local pos = clicker:get_pos()
 		pos = {x = pos.x, y = pos.y + 0.2, z = pos.z}
 		minetest.after(0.1, function()
-			clicker:setpos(pos)
+			clicker:set_pos(pos)
 		end)
 		return
 	elseif not self.driver then
@@ -47,15 +47,15 @@ function deltaplane.on_rightclick(self, clicker)
 		clicker:set_detach()
 		self.driver = clicker
 		clicker:set_attach(self.object, "", {x = 0, y = 11, z = -3}, {x = 0, y = 0, z = 0})
-		default.player_attached[name] = true
+		player_api.player_attached[name] = true
 		minetest.after(0.2, function()
-			default.player_set_animation(clicker, "sit" , 30)
+			player_api.set_animation(clicker, "sit", 30)
 		end)
 
 		if clicker.set_look_horizontal then
-			clicker:set_look_horizontal(self.object:getyaw())
+			clicker:set_look_horizontal(self.object:get_yaw())
 		else
-			clicker:set_look_yaw(self.object:getyaw())
+			clicker:set_look_yaw(self.object:get_yaw())
 		end
 	end
 end
@@ -82,20 +82,20 @@ function deltaplane.on_punch(self, puncher)
 
 	if not self.driver then
 		self.object:remove()
-		if not minetest.setting_getbool("creative_mode") then
+		if not minetest.settings:get_bool("creative_mode") then
 			local inv = puncher:get_inventory()
 			if inv:room_for_item("main", "deltaplane:" .. self.parameters.name) then
 				inv:add_item("main", "deltaplane:" .. self.parameters.name)
 			else
-				minetest.add_item(self.object:getpos(), "deltaplane:" .. self.parameters.name)
+				minetest.add_item(self.object:get_pos(), "deltaplane:" .. self.parameters.name)
 			end
 		end
 	end
 end
 
 function deltaplane.on_step(self, dtime)
-	self.v = deltaplane.get_v(self.object:getvelocity()) * deltaplane.get_sign(self.v)
-	local pos = self.object:getpos()
+	self.v = deltaplane.get_v(self.object:get_velocity()) * deltaplane.get_sign(self.v)
+	local pos = self.object:get_pos()
 	local node = minetest.get_node_or_nil(pos)
 	local climb = 0
 	local in_water = false
@@ -111,7 +111,7 @@ function deltaplane.on_step(self, dtime)
 	if self.object:get_hp() <= 0 then
 		if self.driver then
 			self.driver:set_detach()
-			default.player_attached[self.driver:get_player_name()] = false
+			player_api.player_attached[self.driver:get_player_name()] = false
 			self.driver = nil
 		end
 		minetest.after(0.1, function()
@@ -127,7 +127,7 @@ function deltaplane.on_step(self, dtime)
 		end
 
 		local ctrl = self.driver:get_player_control()
-		local yaw = self.object:getyaw()
+		local yaw = self.object:get_yaw()
 		if not self.stand then
 			if ctrl.up and self.v < self.parameters.controls.speed then
 				self.v = self.v + 0.4
@@ -147,9 +147,9 @@ function deltaplane.on_step(self, dtime)
 		--		5, 0)
 		end
 		if ctrl.left then
-			self.object:setyaw(yaw + (1 + dtime) * (0.08 * (self.parameters.controls.rotate or 1)))
+			self.object:set_yaw(yaw + (1 + dtime) * (0.08 * (self.parameters.controls.rotate or 1)))
 		elseif ctrl.right then
-			self.object:setyaw(yaw - (1 + dtime) * (0.08 * (self.parameters.controls.rotate or 1)))
+			self.object:set_yaw(yaw - (1 + dtime) * (0.08 * (self.parameters.controls.rotate or 1)))
 		end
 	else
 		self.v = self.v - 0.5
@@ -175,7 +175,7 @@ function deltaplane.on_step(self, dtime)
 	
 	
 	if climb < -5 then climb = -5 end
-	self.object:setvelocity(deltaplane.get_velocity(self.v, self.object:getyaw(), climb))
+	self.object:set_velocity(deltaplane.get_velocity(self.v, self.object:get_yaw(), climb))
 end
 
 deltaplane.register_deltaplane = function(parameters)
@@ -220,15 +220,13 @@ deltaplane.register_deltaplane = function(parameters)
 			if not node or node.name ~= "air" then return end
 	
 			minetest.add_entity(pos, "deltaplane:"..parameters.name)
-			if not minetest.setting_getbool("creative_mode") then
+			if not minetest.settings:get_bool("creative_mode") then
 				itemstack:take_item()
 			end
 			return itemstack
 		end,
 	})
 end
-
-
 
 deltaplane.register_deltaplane({
 	name = "deltaplane1",
@@ -250,5 +248,3 @@ minetest.register_craft({
 		{"farming:string", "", "farming:string"},
 	},
 })
-
-
